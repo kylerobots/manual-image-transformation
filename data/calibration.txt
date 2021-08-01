@@ -1,0 +1,53 @@
+header {
+  stamp {
+    nsec: 312000000
+  }
+  data {
+    key: "frame_id"
+    value: "camera::camera_frame::camera"
+  }
+}
+width: 1280
+height: 960
+distortion {
+  k: 0
+  k: 0
+  k: 0
+  k: 0
+  k: 0
+}
+intrinsics {
+  k: 277
+  k: 0
+  k: 160
+  k: 0
+  k: 277
+  k: 120
+  k: 0
+  k: 0
+  k: 1
+}
+projection {
+  p: 277
+  p: 0
+  p: 160
+  p: -0
+  p: 0
+  p: 277
+  p: 120
+  p: 0
+  p: 0
+  p: 0
+  p: 1
+  p: 0
+}
+rectification_matrix: 1
+rectification_matrix: 0
+rectification_matrix: 0
+rectification_matrix: 0
+rectification_matrix: 1
+rectification_matrix: 0
+rectification_matrix: 0
+rectification_matrix: 0
+rectification_matrix: 1
+
