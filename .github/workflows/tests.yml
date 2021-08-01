@@ -29,4 +29,4 @@ jobs:
           pip install pipenv
           pipenv install --python ${{ matrix.python-version }}
       - name: Run Tests
-        run: pipenv run python -m unittest discover -s src
+        run: pipenv run python -m unittest discover -s src -v
