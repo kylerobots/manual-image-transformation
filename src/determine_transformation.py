@@ -2,6 +2,7 @@ import argparse
 import numpy
 from PIL import Image
 from PIL import UnidentifiedImageError
+import TransformationCalculator
 
 
 def loadImage(filename: str) -> numpy.ndarray:
@@ -47,3 +48,7 @@ if __name__ == '__main__':
         print('Unable to read {0:s}'.format(args.second_image))
         exit(-1)
     # Pass the images in to the module for transformation prediction.
+    calculator = TransformationCalculator.TransformmationCalculator()
+    transform = calculator.calculateTransform(first_image, second_image)
+    print('The calculated transform matrix between the two images is:')
+    print(transform)
