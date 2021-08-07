@@ -1,0 +1,13 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Example",
+			"type": "shell",
+			"command": "py -m pipenv run python src/determine_transformation.py data/000000.png data/000001.png",
+			"problemMatcher": []
+		}
+	]
+}

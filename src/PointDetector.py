@@ -1,3 +1,4 @@
+import cv2
 import numpy
 from scipy import signal
 
@@ -19,7 +20,7 @@ class PointDetector(object):
             raise ValueError('Threshold must be a number greater than zero.')
         self.threshold = threshold
 
-    def detect(self, image: numpy.ndarray) -> numpy.ndarray:
+    def detect(self, image: numpy.ndarray) -> list:
         """!
         @brief Perform point detection using a 2nd order derivative filter.
 
@@ -38,4 +39,22 @@ class PointDetector(object):
         result = signal.convolve2d(in1=image, in2=filter, mode='same')
         threshold_result = numpy.absolute(result) >= self.threshold
         keypoints = numpy.argwhere(threshold_result)
+        return self._createCVKeypoints(keypoints)
+
+    def _createCVKeypoints(self, keypoint_array: numpy.ndarray) -> list:
+        """!
+        @brief Convert the numpy arrays of keypoint locations into a list of OpenCV keypoints.
+
+        This is for convenience when performing the transformation calculation.
+
+        @param keypoint_array A numpy array of keypoints, Nx2 in size, where the elements are the pixel coordinates of the
+        keypoints.
+        @return list Returns a list of cv2.Keypoints.
+        """
+        keypoints = []
+        for i in range(keypoint_array.shape[0]):
+            x = keypoint_array[i, 0]
+            y = keypoint_array[i, 1]
+            keypoint = cv2.KeyPoint(float(x), float(y), size=1.0)
+            keypoints.append(keypoint)
         return keypoints
