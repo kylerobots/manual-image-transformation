@@ -1,6 +1,7 @@
 import argparse
 import numpy
 from PIL import Image
+from PIL import ImageOps
 from PIL import UnidentifiedImageError
 import TransformationCalculator
 
@@ -9,15 +10,16 @@ def loadImage(filename: str) -> numpy.ndarray:
     """!
     @brief Load an image from file to return as a numpy array.
 
-    This uses Pillow as an intermediary to support loading a variety of image formats. After, it simply converts to a
-    numpy array to use by the user.
+    This uses Pillow as an intermediary to support loading a variety of image formats. After, it converts the image to
+    grayscale and returns it as a numpy array.
     @param filename The file to load.
-    @return numpy.ndarray A numpy array of the loaded image.
+    @return numpy.ndarray A numpy array of the grayscale version of the loaded image.
     @throws FileNotFoundError Thrown if the file does not exist.
     @throws PIL.UnidentifiedImageError Thrown if the image cannot be read.
     """
     image = Image.open(filename)
-    image_array = numpy.array(image)
+    grayscale_image = ImageOps.grayscale(image)
+    image_array = numpy.array(grayscale_image)
     return image_array
 
 
