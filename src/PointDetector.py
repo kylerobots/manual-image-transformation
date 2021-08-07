@@ -1,4 +1,5 @@
 import numpy
+from scipy import signal
 
 
 class PointDetector(object):
@@ -10,8 +11,8 @@ class PointDetector(object):
         """!
         @brief Construct a PointDetector object.
 
-        @param threshold The threshold value to use to find points. All pixels greater than this will be labeled. This
-        value should be a positive number.
+        @param threshold The threshold value to use to find points. All pixels greater than or equal to this will be
+        labeled. This value should be a positive number.
         """
         super().__init__()
         if threshold <= 0.0:
@@ -32,4 +33,9 @@ class PointDetector(object):
         @return numpy.ndarray Returns an array holding the keypoints. The array is Nx2 where N is the number of
         detected keypoints. The values correspond to the x and y pixel locations of these keypoints.
         """
-        return numpy.zeros((1, 2))
+        filter = numpy.array([[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]])
+        # Run the convolution to find the 2nd derivative
+        result = signal.convolve2d(in1=image, in2=filter, mode='same')
+        threshold_result = numpy.absolute(result) >= self.threshold
+        keypoints = numpy.argwhere(threshold_result)
+        return keypoints
