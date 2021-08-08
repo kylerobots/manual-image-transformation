@@ -3,6 +3,28 @@ import cv2
 import numpy
 
 
+def loadParameters(filename: str) -> numpy.ndarray:
+    """!
+    @brief Read in the calibration parameters from a text file.
+
+    Each value in the calibration matrix should be on its own line. The line numbers are as follows:
+
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+
+    @param filename The file to load the intrinsic matrix from.
+    @return numpy.ndarray Returns a 3x3 numpy array representing the intrinsic calibration matrix.
+    """
+    calibration_matrix = numpy.zeros((9,))
+    with open(filename) as file:
+        element = 0
+        for line in file:
+            calibration_matrix[element] = float(line)
+            element += 1
+    return calibration_matrix.reshape((3, 3))
+
+
 def processImage(filename: str, detector: cv2.Feature2D, descriptor: cv2.Feature2D) -> tuple[list[cv2.KeyPoint], numpy.ndarray]:
     """!
     @brief Load an image, detect keypoints within it, and describe those keypoints.
@@ -36,6 +58,8 @@ if __name__ == '__main__':
                         help='The first image in the sequence')
     parser.add_argument('second_image', metavar='2', type=str,
                         help='The second image in the sequence')
+    parser.add_argument('calibration_file', metavar='calibration_file',
+                        type=str, help='The file containing camera parameters')
     args = parser.parse_args()
     # Create the selected detector and describer
     detector = cv2.SIFT_create()
@@ -68,8 +92,8 @@ if __name__ == '__main__':
     H, _ = cv2.findHomography(points1, points2, cv2.RANSAC)
     print(H)
 
-    camera_parameters = numpy.array(
-        [[1, 0, 0.1], [0, 1, 0.1], [0.0, 0.0, 1.0]])
+    camera_parameters = loadParameters(args.calibration_file)
+    print(camera_parameters)
     num_solutions, rotations, translations, normals = cv2.decomposeHomographyMat(
         H, camera_parameters)
     for i in range(num_solutions):
