@@ -13,7 +13,8 @@
 			"args": [
 				"data/000000.png",
 				"data/000001.png",
-				"data/calibration.txt"
+				"data/calibration.txt",
+				"data/expected_result.txt"
 			]
 		}
 	]

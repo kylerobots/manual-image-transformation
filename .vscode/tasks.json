@@ -6,7 +6,7 @@
 		{
 			"label": "Run Example",
 			"type": "shell",
-			"command": "py -m pipenv run python src/determine_transformation.py data/000000.png data/000001.png data/calibration.txt",
+			"command": "py -m pipenv run python src/determine_transformation.py data/000000.png data/000001.png data/calibration.txt, data/expected_result.txt",
 			"problemMatcher": []
 		}
 	]
