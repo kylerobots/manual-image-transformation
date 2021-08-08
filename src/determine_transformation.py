@@ -1,8 +1,6 @@
 import argparse
+import cv2
 import numpy
-from PIL import Image
-from PIL import ImageOps
-from PIL import UnidentifiedImageError
 import TransformationCalculator
 
 
@@ -10,17 +8,21 @@ def loadImage(filename: str) -> numpy.ndarray:
     """!
     @brief Load an image from file to return as a numpy array.
 
-    This uses Pillow as an intermediary to support loading a variety of image formats. After, it converts the image to
+    This uses OpenCV as an intermediary to support loading a variety of image formats. After, it converts the image to
     grayscale and returns it as a numpy array.
     @param filename The file to load.
     @return numpy.ndarray A numpy array of the grayscale version of the loaded image.
-    @throws FileNotFoundError Thrown if the file does not exist.
-    @throws PIL.UnidentifiedImageError Thrown if the image cannot be read.
+    @throws ValueError Thrown if the file can't be read or the image can't be converted to grayscale.
     """
-    image = Image.open(filename)
-    grayscale_image = ImageOps.grayscale(image)
-    image_array = numpy.array(grayscale_image)
-    return image_array
+    image = cv2.imread(filename)
+    if image is None:
+        raise ValueError('Unable to read image from {0:s}'.format(filename))
+    try:
+        grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    except:
+        raise ValueError(
+            'Unable to convert image to grayscale: {0:s}'.format(filename))
+    return grayscale_image
 
 
 if __name__ == '__main__':
@@ -35,19 +37,13 @@ if __name__ == '__main__':
     # Try to load each image. If there is a problem with any of them, warn the user and exit.
     try:
         first_image = loadImage(args.first_image)
-    except FileNotFoundError as ex:
-        print('Unable to find {0:s}'.format(args.first_image))
-        exit(-1)
-    except UnidentifiedImageError:
-        print('Unable to read {0:s}'.format(args.first_image))
+    except ValueError as ex:
+        print('Unable to load {0:s}'.format(args.first_image))
         exit(-1)
     try:
         second_image = loadImage(args.second_image)
-    except FileNotFoundError:
-        print('Unable to find {0:s}'.format(args.second_image))
-        exit(-1)
-    except UnidentifiedImageError:
-        print('Unable to read {0:s}'.format(args.second_image))
+    except ValueError:
+        print('Unable to load {0:s}'.format(args.second_image))
         exit(-1)
     # Pass the images in to the module for transformation prediction.
     calculator = TransformationCalculator.TransformmationCalculator()
