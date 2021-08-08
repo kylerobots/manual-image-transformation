@@ -42,45 +42,42 @@ if __name__ == '__main__':
     # Get the keypoints and descriptions from each specified image file.
     (first_keypoints, first_descriptions) = processImage(
         args.first_image, detector, detector)
+    (second_keypoints, second_descriptions) = processImage(
+        args.second_image, detector, detector)
 
-    # Try to load each image. If there is a problem with any of them, warn the user and exit.
-    # try:
-    #     first_image = loadImage(args.first_image)
-    # except ValueError as ex:
-    #     print('Unable to load {0:s}'.format(args.first_image))
-    #     exit(-1)
-    # try:
-    #     second_image = loadImage(args.second_image)
-    # except ValueError:
-    #     print('Unable to load {0:s}'.format(args.second_image))
-    #     exit(-1)
-    # # Next, perform keypoint detection with the selected method.
-    # temp_detector = cv2.SIFT_create()
-    # first_keypoints = temp_detector.detect(first_image)
-    # second_keypoints = temp_detector.detect(second_image)
-    # print(len(first_keypoints))
-    # print(len(second_keypoints))
-    # # Then, describe each keypoint
-    # (_, first_descriptors) = temp_detector.compute(first_image, first_keypoints)
-    # (_, second_descriptors) = temp_detector.compute(
-    #     second_image, second_keypoints)
-    # # Then, determine the correspondences
-    # index_params = dict(algorithm=1, trees=5)
-    # search_params = dict(checks=50)
-    # flann = cv2.FlannBasedMatcher(index_params, search_params)
-    # matches = flann.knnMatch(first_descriptors, second_descriptors, k=2)
-    # for i in range(len(matches)):
-    #     if len(matches[i]) != 2:
-    #         print('Other things!')
-    #     print("{0}: {1} - {2}".format(i, type(matches[i][0]), matches[i][1]))
-    # print(len(matches[0]))
-    # good = []
-    # for m, n in matches:
-    #     if m.distance < 0.7*n.distance:
-    #         good.append(m)
-    # src_pts = numpy.float32(
-    #     [first_keypoints[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
-    # dst_pts = numpy.float32(
-    #     [second_keypoints[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
-    # print(src_pts.shape)
-    # print(dst_pts.shape)
+    matcher = cv2.DescriptorMatcher_create(cv2.DescriptorMatcher_FLANNBASED)
+    knn_matches = matcher.knnMatch(
+        queryDescriptors=first_descriptions, trainDescriptors=second_descriptions, k=2)
+    good_threshold = 0.7
+    good_matches = []
+    for match_set in knn_matches:
+        if match_set[0].distance < good_threshold * match_set[1].distance:
+            good_matches.append(match_set[0])
+    print('There are {0:d} good matches'.format(len(good_matches)))
+
+    points1 = numpy.zeros(shape=(len(good_matches), 2))
+    points2 = numpy.zeros_like(points1)
+    for i, match in enumerate(good_matches):
+        keypoint1 = first_keypoints[match.queryIdx]
+        keypoint2 = first_keypoints[match.trainIdx]
+        points1[i][0] = keypoint1.pt[0]
+        points1[i][1] = keypoint1.pt[1]
+        points2[i][0] = keypoint2.pt[0]
+        points2[i][1] = keypoint2.pt[1]
+
+    H, _ = cv2.findHomography(points1, points2, cv2.RANSAC)
+    print(H)
+
+    camera_parameters = numpy.array(
+        [[1, 0, 0.1], [0, 1, 0.1], [0.0, 0.0, 1.0]])
+    num_solutions, rotations, translations, normals = cv2.decomposeHomographyMat(
+        H, camera_parameters)
+    for i in range(num_solutions):
+        print('Option #{0:d}:'.format(i))
+        print('Rotation:')
+        print(rotations[i])
+        print('Translation:')
+        print(translations[i])
+        print('Plane Normal:')
+        print(normals[i])
+        print('\n')
