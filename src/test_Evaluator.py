@@ -1,4 +1,3 @@
-from scipy.spatial import transform
 from Evaluator import Evaluator
 import numpy
 import unittest
@@ -60,3 +59,7 @@ class TestEvaluator(unittest.TestCase):
         (_, result) = evaluator._calculateDifference(transform1, transform2)
         # It might wrap to -pi, so check the absolute value
         self.assertAlmostEqual(abs(result), numpy.pi, 8)
+        # Test an extreme value
+        transform2 = -1.0 * numpy.eye(4)
+        (_, result) = evaluator._calculateDifference(transform2, transform1)
+        self.assertAlmostEqual(abs(result), numpy.pi)
