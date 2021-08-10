@@ -3,20 +3,7 @@ import cv2
 import numpy
 from scipy.spatial.transform.rotation import Rotation
 
-
-def calculateError(transformation: numpy.ndarray, expected_transformation: numpy.ndarray) -> tuple[float, float]:
-    translation = transformation[0:3, 3]
-    expected_translation = expected_transformation[0:3, 3]
-    translation_error = numpy.linalg.norm(translation - expected_translation)
-    # Compute the rotation between these two rotations as a measure of error
-    rotation = transformation[0:3, 0:3]
-    expected_rotation = expected_transformation[0:3, 0:3]
-    error_rotation = rotation*expected_rotation.transpose()
-    # Convert to axis-angle and extract the angle. That will serve as a magnitude of sorts.
-    error_rotation_object = Rotation.from_matrix(error_rotation)
-    rotation_vector = error_rotation_object.as_rotvec()
-    rotation_error = numpy.linalg.norm(rotation_vector)
-    return (translation_error, rotation_error)
+from Evaluator import Evaluator
 
 
 def computeTransform(first_points: numpy.ndarray, second_points: numpy.ndarray, camera_parameters: numpy.ndarray) -> numpy.ndarray:
@@ -28,29 +15,6 @@ def computeTransform(first_points: numpy.ndarray, second_points: numpy.ndarray, 
     transformation[0:3, 0:3] = rotations[0]
     transformation[0:3, 3:] = translations[0]
     return transformation
-
-
-def findCorrespondence(first_keypoints: list[cv2.KeyPoint], first_descriptions: numpy.ndarray, second_keypoints: list[cv2.KeyPoint], second_descriptions: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray]:
-    matcher = cv2.DescriptorMatcher_create(cv2.DescriptorMatcher_FLANNBASED)
-    knn_matches = matcher.knnMatch(
-        queryDescriptors=first_descriptions, trainDescriptors=second_descriptions, k=2)
-    good_threshold = 0.7
-    good_matches = []
-    for match_set in knn_matches:
-        if match_set[0].distance < good_threshold * match_set[1].distance:
-            good_matches.append(match_set[0])
-    print('There are {0:d} good matches'.format(len(good_matches)))
-
-    first_points = numpy.zeros(shape=(len(good_matches), 2))
-    second_points = numpy.zeros_like(first_points)
-    for i, match in enumerate(good_matches):
-        keypoint1 = first_keypoints[match.queryIdx]
-        keypoint2 = first_keypoints[match.trainIdx]
-        first_points[i][0] = keypoint1.pt[0]
-        first_points[i][1] = keypoint1.pt[1]
-        second_points[i][0] = keypoint2.pt[0]
-        second_points[i][1] = keypoint2.pt[1]
-    return (first_points, second_points)
 
 
 def loadExpectedResult(filename: str) -> numpy.ndarray:
@@ -125,6 +89,9 @@ if __name__ == '__main__':
     parser.add_argument('expected_result_file', metavar='expected_result_file', type=str,
                         help='The file containing the ground truth 2D transformation between images.')
     args = parser.parse_args()
+
+    evaluator = Evaluator()
+
     # Create the selected detector and describer
     detector = cv2.SIFT_create()
     # Get the keypoints and descriptions from each specified image file.
@@ -133,15 +100,17 @@ if __name__ == '__main__':
     (second_keypoints, second_descriptions) = processImage(
         args.second_image, detector, detector)
 
-    (first_points, second_points) = findCorrespondence(
-        first_keypoints, first_descriptions, second_keypoints, second_descriptions)
-    camera_parameters = loadParameters(args.calibration_file)
-    transformation = computeTransform(
-        first_points, second_points, camera_parameters)
-    expected_transformation = loadExpectedResult(args.expected_result_file)
-    (translation_error, rotation_error) = calculateError(
-        transformation, expected_transformation)
-    print('Translational error:')
-    print(translation_error)
-    print('Rotational error:')
-    print(rotation_error)
+    (first, second) = evaluator._findCorrespondence(first_keypoints,
+                                                    first_descriptions, second_keypoints, second_descriptions)
+    # (first_points, second_points) = findCorrespondence(
+    #     first_keypoints, first_descriptions, second_keypoints, second_descriptions)
+    # camera_parameters = loadParameters(args.calibration_file)
+    # transformation = computeTransform(
+    #     first_points, second_points, camera_parameters)
+    # expected_transformation = loadExpectedResult(args.expected_result_file)
+    # (translation_error, rotation_error) = calculateError(
+    #     transformation, expected_transformation)
+    # print('Translational error:')
+    # print(translation_error)
+    # print('Rotational error:')
+    # print(rotation_error)

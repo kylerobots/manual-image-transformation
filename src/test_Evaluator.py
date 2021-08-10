@@ -1,3 +1,4 @@
+import cv2
 from Evaluator import Evaluator
 import numpy
 import unittest
@@ -63,3 +64,29 @@ class TestEvaluator(unittest.TestCase):
         transform2 = -1.0 * numpy.eye(4)
         (_, result) = evaluator._calculateDifference(transform2, transform1)
         self.assertAlmostEqual(abs(result), numpy.pi)
+
+    def testFindCorrespondence(self):
+        """!
+        @test Test that the matching between keypoints is correct.
+        """
+        # Create some dummy keypoints and descriptors to match. Make the descriptors really far apart to be sure.
+        keypoints1 = []
+        descriptors1 = numpy.zeros(shape=(3, 1))
+        keypoint = cv2.KeyPoint()
+        for i in range(3):
+            keypoint.pt = (float(i), 0.0)
+            keypoints1.append(keypoint)
+            descriptors1[i] = i*100.0
+        keypoints2 = []
+        descriptors2 = numpy.zeros(shape=(5, 1))
+        for i in range(5):
+            keypoint.pt = (0.0, float(i))
+            keypoints2.append(keypoint)
+            descriptors2[i] = i*105.0
+        evaluator = Evaluator()
+        (first_points, second_points) = evaluator._findCorrespondence(
+            keypoints1, descriptors1, keypoints2, descriptors2)
+        expected_first = numpy.array([[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]])
+        expected_second = numpy.array([[0.0, 0.0], [0.0, 1.0], [0.0, 2.0]])
+        self.assertTrue(numpy.array_equal(first_points, expected_first))
+        self.assertTrue(numpy.array_equal(second_points, expected_second))

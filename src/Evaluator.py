@@ -1,4 +1,4 @@
-
+import cv2
 import numpy
 from typing import Any
 from scipy.spatial.transform import Rotation
@@ -14,6 +14,10 @@ class Evaluator:
     """
 
     def __init__(self) -> None:
+        # Used to find correspondences between two sets of keypoints by checking if one candidate is lower than this
+        # percentage of the next closest candadate. i.e. match if distance between A and X is less than
+        # descriptor_match_threshold * distance between A and Y.
+        self.descriptor_match_threshold = 0.7
         pass
 
     def evaluate(self, detector: Any, descriptor: Any) -> tuple[float, float]:
@@ -58,19 +62,54 @@ class Evaluator:
         rotation_vector = rotation_matrix_scipy.as_rotvec()
         rotation_difference = numpy.linalg.norm(rotation_vector)
         return (translation_difference, rotation_difference)
-    #     translation = transformation[0:3, 3]
-    # expected_translation = expected_transformation[0:3, 3]
-    # translation_error = numpy.linalg.norm(translation - expected_translation)
-    # # Compute the rotation between these two rotations as a measure of error
-    # rotation = transformation[0:3, 0:3]
-    # expected_rotation = expected_transformation[0:3, 0:3]
-    # error_rotation = rotation*expected_rotation.transpose()
-    # # Convert to axis-angle and extract the angle. That will serve as a magnitude of sorts.
-    # error_rotation_object = Rotation.from_matrix(error_rotation)
-    # rotation_vector = error_rotation_object.as_rotvec()
-    # rotation_error = numpy.linalg.norm(rotation_vector)
-    # return (translation_error, rotation_error)
-        # return (0.0, 0.0)
+
+    def _findCorrespondence(self, keypoints1: list[cv2.KeyPoint], descriptors1: numpy.ndarray, keypoints2: list[cv2.KeyPoint], descriptors2: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray]:
+        """!
+        @brief Use descriptors to find matching keypoints in two sets.
+
+        This matches keypoints between two sets by comparing their associated descriptors. It uses a K-Nearest Neighbor
+        object to identify 2 possible matches between a given keypoint from the first set and all keypoints in the
+        second set. With each candidate match, it also provides a distance measure used to quantify how close of a match
+        the two are. A match is considered correct if its distance measure is less than a certain fraction of the next
+        closest match for that keypoint.
+
+        In other words, say there is a keypoint in the first group, A. The KNN object returns candidate matches to
+        the two most similar keypoints in the second group, X and Y. A and X are considered a match if the distance
+        between X and A is less than 70% of the distance between A and Y.
+
+        @param keypoints1 A list of keypoints from the first image.
+        @param descriptors1 The array containing the descriptors for these keypoints.
+        @param keypoints2 A list of keypoints from the second image.
+        @param descriptors2 The array containing the descriptors for these keypoints.
+        @return tuple[numpy.ndarray, numpy.ndarray] Returns two matching arrays, each Nx2 where N are the number of
+        matched keypoints. Each element[i, :] measures the pixel value of the keypoint in one or the other array.
+        """
+        # First, create a KNN matcher to find neighbors
+        matcher = cv2.DescriptorMatcher_create(
+            cv2.DescriptorMatcher_FLANNBASED)
+        # Find the candidate matches
+        knn_matches = matcher.knnMatch(
+            queryDescriptors=descriptors1, trainDescriptors=descriptors2, k=2)
+        # Find which are confirmed matches
+        good_matches = []
+        for match_set in knn_matches:
+            # Compare the first match to the second match to see if it meets the criteria.
+            if match_set[0].distance < self.descriptor_match_threshold * match_set[1].distance:
+                # Mark this off as a correct match if so
+                good_matches.append(match_set[0])
+        # Now that all matches are found, create the arrays of keypoint locations
+        first_points = numpy.zeros(shape=(len(good_matches), 2))
+        second_points = numpy.zeros_like(first_points)
+        for i, match in enumerate(good_matches):
+            # The match objects only provide which index in each keypoint list is a match. Use these to look up the
+            # position information for the given keypoint.
+            matched_keypoint1 = keypoints1[match.queryIdx]
+            matched_keypoint2 = keypoints2[match.trainIdx]
+            first_points[i][0] = matched_keypoint1.pt[0]
+            first_points[i][1] = matched_keypoint1.pt[1]
+            second_points[i][0] = matched_keypoint2.pt[0]
+            second_points[i][1] = matched_keypoint2.pt[1]
+        return (first_points, second_points)
 
     # def calculateTransform(self, image1: numpy.ndarray, image2: numpy.ndarray) -> numpy.ndarray:
     #     """!
