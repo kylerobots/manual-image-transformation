@@ -63,6 +63,35 @@ class Evaluator:
         rotation_difference = numpy.linalg.norm(rotation_vector)
         return (translation_difference, rotation_difference)
 
+    def _calculateTransform(self, first: numpy.ndarray, second: numpy.ndarray, intrinsic: numpy.ndarray) -> numpy.ndarray:
+        """!
+        @brief Given two sets of matching points seen by a camera, estimate the transformation the camera underwent
+        between the two sets.
+
+        This uses two OpenCV methods to calculate the result. First is a RANSAC based method to find the homography
+        between the two sets of points. Then, it uses the camera parameters to decompose the homography into its
+        components, including the rotation and translation vectors.
+
+        This produces 4 possible results. Using knowledge of the world (points in front of the camera, camera above
+        the ground plane, etc.), only one result is selected. This is what is returned.
+
+        @param first Nx2 matrix representing the locations of the matched keypoints in the first image.
+        @param second Nx2 matrix representing the locations of the matched keypoints in the second image.
+        @param intrinsic The 3x3 intrinsic matrix of the camera.
+        @return numpy.ndarray Returns a 4x4 matrix of the homogenous transformation the camera underwent between the two
+        views that produced the given points.
+        """
+        # Estimate the homography
+        H, _ = cv2.findHomography(first, second, cv2.RANSAC)
+        # Determine candidate transformations
+        num_solutions, rotations, translations, normals = cv2.decomposeHomographyMat(
+            H, intrinsic)
+        # Find the correct one by knowledge of the data collection
+        transformation = numpy.eye(4)
+        transformation[0:3, 0:3] = rotations[0]
+        transformation[0:3, 3:] = translations[0]
+        return transformation
+
     def _findCorrespondence(self, keypoints1: list[cv2.KeyPoint], descriptors1: numpy.ndarray, keypoints2: list[cv2.KeyPoint], descriptors2: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray]:
         """!
         @brief Use descriptors to find matching keypoints in two sets.

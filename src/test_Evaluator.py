@@ -9,26 +9,11 @@ class TestEvaluator(unittest.TestCase):
     @brief Test the various components of the evaluator class.
     """
 
-    def testCalculateTranslationDiff(self):
+    def testCalculateHomography(self):
         """!
-        @test Test that translations between two transformations are calculated correctly.
+        @test Test that the homography is determined correctly
         """
-        evaluator = Evaluator()
-        # Test Identity
-        transform1 = numpy.eye(4)
-        transform2 = numpy.eye(4)
-        (result, _) = evaluator._calculateDifference(transform1, transform2)
-        self.assertEqual(result, 0.0)
-        # Test nonzero
-        vector1 = numpy.array([3.0, 4.0, 5.0]).transpose()
-        transform1[0:3, 3] = vector1
-        vector2 = numpy.array([-10.0, -11.5, -12.75]).transpose()
-        transform2[0:3, 3] = vector2
-        (result, _) = evaluator._calculateDifference(transform1, transform2)
-        self.assertAlmostEqual(result, 26.9130545, 6)
-        # Order shouldn't matter
-        (result, _) = evaluator._calculateDifference(transform2, transform1)
-        self.assertAlmostEqual(result, 26.9130545, 6)
+        self.assertTrue(False)
 
     def testCalculateRotationDiff(self):
         """!
@@ -64,6 +49,35 @@ class TestEvaluator(unittest.TestCase):
         transform2 = -1.0 * numpy.eye(4)
         (_, result) = evaluator._calculateDifference(transform2, transform1)
         self.assertAlmostEqual(abs(result), numpy.pi)
+
+    def testCalculateTranslationDiff(self):
+        """!
+        @test Test that translations between two transformations are calculated correctly.
+        """
+        evaluator = Evaluator()
+        # Test Identity
+        transform1 = numpy.eye(4)
+        transform2 = numpy.eye(4)
+        (result, _) = evaluator._calculateDifference(transform1, transform2)
+        self.assertEqual(result, 0.0)
+        # Test nonzero
+        vector1 = numpy.array([3.0, 4.0, 5.0]).transpose()
+        transform1[0:3, 3] = vector1
+        vector2 = numpy.array([-10.0, -11.5, -12.75]).transpose()
+        transform2[0:3, 3] = vector2
+        (result, _) = evaluator._calculateDifference(transform1, transform2)
+        self.assertAlmostEqual(result, 26.9130545, 6)
+        # Order shouldn't matter
+        (result, _) = evaluator._calculateDifference(transform2, transform1)
+        self.assertAlmostEqual(result, 26.9130545, 6)
+
+    def testDecomposeHomography(self):
+        """!
+        @test Test that the system picks the correct candidate transformation from a given homography.
+
+        @note This just randomly picks one now, so is definitely wrong.
+        """
+        self.assertFalse(True)
 
     def testFindCorrespondence(self):
         """!

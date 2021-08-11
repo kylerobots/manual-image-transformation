@@ -6,17 +6,6 @@ from scipy.spatial.transform.rotation import Rotation
 from Evaluator import Evaluator
 
 
-def computeTransform(first_points: numpy.ndarray, second_points: numpy.ndarray, camera_parameters: numpy.ndarray) -> numpy.ndarray:
-    H, _ = cv2.findHomography(first_points, second_points, cv2.RANSAC)
-    num_solutions, rotations, translations, normals = cv2.decomposeHomographyMat(
-        H, camera_parameters)
-    # Just pick one for now
-    transformation = numpy.zeros((4, 4))
-    transformation[0:3, 0:3] = rotations[0]
-    transformation[0:3, 3:] = translations[0]
-    return transformation
-
-
 def loadExpectedResult(filename: str) -> numpy.ndarray:
     expected_transformation = numpy.eye(4)
     with open(filename) as file:
