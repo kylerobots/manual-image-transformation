@@ -5,8 +5,8 @@ name = "pypi"
 
 [packages]
 numpy = "*"
-pillow = "*"
 scipy = "*"
+opencv-python = "*"
 
 [dev-packages]
 autopep8 = "*"

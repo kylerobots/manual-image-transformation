@@ -27,11 +27,15 @@ class TestPointDetector(unittest.TestCase):
         image = numpy.array([[0, 0, 0], [0, 255, 0], [0, 0, 0]])
         detector = PointDetector(500)
         result = detector.detect(image)
-        expected_result = numpy.array([[1, 1]])
-        self.assertTrue(numpy.array_equal(result, expected_result),
-                        'PointDetector does not find keypoint correctly.')
+        # Only one keypoint should be found for the center pixel
+        self.assertEqual(
+            len(result), 1, 'PointDetector did not find only 1 keypoint.')
+        self.assertTupleEqual(
+            result[0].pt, (1, 1), 'PointDetector did not find the expected keypoint.')
         # Even though these won't occur in grayscale, negative values should still work.
         image = numpy.array([[0, 0, 0], [0, -255, 0], [0, 0, 0]])
         result = detector.detect(image)
-        self.assertTrue(numpy.array_equal(result, expected_result),
-                        'PointDetector does not find keypoints of negative values correctly.')
+        self.assertEqual(
+            len(result), 1, 'PointDetector did not find only 1 keypoint.')
+        self.assertTupleEqual(
+            result[0].pt, (1, 1), 'PointDetector did not find the expected keypoint.')
