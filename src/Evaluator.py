@@ -1,6 +1,7 @@
 import cv2
 import numpy
 from typing import Any
+from typing import Tuple
 from scipy.spatial.transform import Rotation
 
 
@@ -38,7 +39,7 @@ class Evaluator:
         self.descriptor_match_threshold = 0.7
         pass
 
-    def evaluate(self, detector: Any, descriptor: Any) -> tuple[float, float]:
+    def evaluate(self, detector: Any, descriptor: Any) -> Tuple[float, float]:
         """!
         @brief Use the provided detector and descriptor to estimate the transformation and compute the error.
 
@@ -70,7 +71,7 @@ class Evaluator:
         results = self._calculateDifference(transform, self._expectedTransform)
         return results
 
-    def _calculateDifference(self, first: numpy.ndarray, second: numpy.ndarray) -> tuple[float, float]:
+    def _calculateDifference(self, first: numpy.ndarray, second: numpy.ndarray) -> Tuple[float, float]:
         """!
         @brief Calculate the translational and rotational difference between two transformations.
 
@@ -127,7 +128,7 @@ class Evaluator:
         transformation[0:3, 3:] = translations[0]
         return transformation
 
-    def _findCorrespondence(self, first_keypoints: list[cv2.KeyPoint], first_descriptors: numpy.ndarray, second_keypoints: list[cv2.KeyPoint], second_descriptors: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray]:
+    def _findCorrespondence(self, first_keypoints: list[cv2.KeyPoint], first_descriptors: numpy.ndarray, second_keypoints: list[cv2.KeyPoint], second_descriptors: numpy.ndarray) -> Tuple[numpy.ndarray, numpy.ndarray]:
         """!
         @brief Use descriptors to find matching keypoints in two sets.
 
