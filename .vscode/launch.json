@@ -12,9 +12,10 @@
 			"console": "integratedTerminal",
 			"args": [
 				"data/000000.png",
+				"data/000000.txt",
 				"data/000001.png",
-				"data/calibration.txt",
-				"data/expected_result.txt"
+				"data/000001.txt",
+				"data/calibration.txt"
 			]
 		}
 	]
