@@ -1,6 +1,7 @@
 import cv2
 import numpy
 from typing import Any
+from typing import List
 from typing import Tuple
 from scipy.spatial.transform import Rotation
 
@@ -128,7 +129,7 @@ class Evaluator:
         transformation[0:3, 3:] = translations[0]
         return transformation
 
-    def _findCorrespondence(self, first_keypoints: list[cv2.KeyPoint], first_descriptors: numpy.ndarray, second_keypoints: list[cv2.KeyPoint], second_descriptors: numpy.ndarray) -> Tuple[numpy.ndarray, numpy.ndarray]:
+    def _findCorrespondence(self, first_keypoints: List[cv2.KeyPoint], first_descriptors: numpy.ndarray, second_keypoints: List[cv2.KeyPoint], second_descriptors: numpy.ndarray) -> Tuple[numpy.ndarray, numpy.ndarray]:
         """!
         @brief Use descriptors to find matching keypoints in two sets.
 
