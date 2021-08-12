@@ -49,8 +49,9 @@ class Evaluator:
         @param detector A detector to use evaluate. It should provide a method called 'detect' that receives an image,
         stored as a numpy.ndarray, and should return a list of cv2.Keypoints.
         @param descriptor A descriptor to evaluate. It should provide a method called 'compute' that has arguments of:
-        1) A numpy.ndarray representing an image, and 2) a list of cv2.Keypoints for that image. It should return a NxM
-        numpy array, where N is the number of keypoints and M is the size of the descriptor.
+        1) A numpy.ndarray representing an image, and 2) a list of cv2.Keypoints for that image. It should return a
+        tuple consisting of the keypoints provided to it and an NxM numpy array, where N is the number of keypoints and
+        M is the size of the descriptor. This is to maintain compatability with OpenCV's implementation.
         """
         # First, generate keypoints and descriptors for each image
         first_keypoints = detector.detect(self.first_image)
