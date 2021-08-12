@@ -1,68 +1,24 @@
 import argparse
 import cv2
 import numpy
-from scipy.spatial.transform.rotation import Rotation
+from scipy.spatial.transform import Rotation
+
+from Evaluator import Evaluator
 
 
-def calculateError(transformation: numpy.ndarray, expected_transformation: numpy.ndarray) -> tuple[float, float]:
-    translation = transformation[0:3, 3]
-    expected_translation = expected_transformation[0:3, 3]
-    translation_error = numpy.linalg.norm(translation - expected_translation)
-    # Compute the rotation between these two rotations as a measure of error
-    rotation = transformation[0:3, 0:3]
-    expected_rotation = expected_transformation[0:3, 0:3]
-    error_rotation = rotation*expected_rotation.transpose()
-    # Convert to axis-angle and extract the angle. That will serve as a magnitude of sorts.
-    error_rotation_object = Rotation.from_matrix(error_rotation)
-    rotation_vector = error_rotation_object.as_rotvec()
-    rotation_error = numpy.linalg.norm(rotation_vector)
-    return (translation_error, rotation_error)
-
-
-def computeTransform(first_points: numpy.ndarray, second_points: numpy.ndarray, camera_parameters: numpy.ndarray) -> numpy.ndarray:
-    H, _ = cv2.findHomography(first_points, second_points, cv2.RANSAC)
-    num_solutions, rotations, translations, normals = cv2.decomposeHomographyMat(
-        H, camera_parameters)
-    # Just pick one for now
-    transformation = numpy.zeros((4, 4))
-    transformation[0:3, 0:3] = rotations[0]
-    transformation[0:3, 3:] = translations[0]
-    return transformation
-
-
-def findCorrespondence(first_keypoints: list[cv2.KeyPoint], first_descriptions: numpy.ndarray, second_keypoints: list[cv2.KeyPoint], second_descriptions: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray]:
-    matcher = cv2.DescriptorMatcher_create(cv2.DescriptorMatcher_FLANNBASED)
-    knn_matches = matcher.knnMatch(
-        queryDescriptors=first_descriptions, trainDescriptors=second_descriptions, k=2)
-    good_threshold = 0.7
-    good_matches = []
-    for match_set in knn_matches:
-        if match_set[0].distance < good_threshold * match_set[1].distance:
-            good_matches.append(match_set[0])
-    print('There are {0:d} good matches'.format(len(good_matches)))
-
-    first_points = numpy.zeros(shape=(len(good_matches), 2))
-    second_points = numpy.zeros_like(first_points)
-    for i, match in enumerate(good_matches):
-        keypoint1 = first_keypoints[match.queryIdx]
-        keypoint2 = first_keypoints[match.trainIdx]
-        first_points[i][0] = keypoint1.pt[0]
-        first_points[i][1] = keypoint1.pt[1]
-        second_points[i][0] = keypoint2.pt[0]
-        second_points[i][1] = keypoint2.pt[1]
-    return (first_points, second_points)
-
-
-def loadExpectedResult(filename: str) -> numpy.ndarray:
-    expected_transformation = numpy.eye(4)
-    with open(filename) as file:
-        # Take only the first three lines as the x, y, and theta coordinates
-        expected_transformation[0, 3] = float(file.readline())
-        expected_transformation[1, 3] = float(file.readline())
-        theta = float(file.readline())
-        scipy_rotation = Rotation.from_euler('z', theta, degrees=False)
-        expected_transformation[0:3, 0:3] = scipy_rotation.as_matrix()
-    return expected_transformation
+def loadImage(filename: str) -> numpy.ndarray:
+    """!
+    @brief Read an image from file and convert to grayscale.
+    @param filename The image file to read.
+    @return numpy.ndarray Returns the image as a numpy array.
+    @raise ValueError raised if the image file cannot be found or read.
+    """
+    try:
+        color_image = cv2.imread(filename)
+        image = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
+    except:
+        raise ValueError('Unable to load image from {0:s}'.format(filename))
+    return image
 
 
 def loadParameters(filename: str) -> numpy.ndarray:
@@ -87,60 +43,67 @@ def loadParameters(filename: str) -> numpy.ndarray:
     return calibration_matrix.reshape((3, 3))
 
 
-def processImage(filename: str, detector: cv2.Feature2D, descriptor: cv2.Feature2D) -> tuple[list[cv2.KeyPoint], numpy.ndarray]:
+def loadPose(filename: str) -> numpy.ndarray:
     """!
-    @brief Load an image, detect keypoints within it, and describe those keypoints.
+    @brief Load the ground truth from file.
 
-    @param filename The file to load the image from.
-    @param detector The keypoint detector to use.
-    @param descriptor The keypoint describer to use.
-    @return tuple A tuple containing the list of keypoints and list of descriptions.
+    The file should be a CSV file with a single line. All other lines will be ignored. The line should contain the
+    ground truth at the time an image was captured. The pose is stored as follows:
+
+    x,y,z,roll,pitch,yaw
+
+    @param filename The file to read
+    @return numpy.ndarray A 4x4 homogenous transform representing the pose in the file.
+    @throw ValueError Thrown if the file could not be read.
     """
-    try:
-        # Load the image first
-        color_image = cv2.imread(filename)
-        # Convert to grayscale
-        image = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
-        # Detect keypoints
-        keypoints = detector.detect(image)
-        # Describe the keypoints
-        (_, descriptions) = descriptor.compute(image, keypoints)
-    except:
-        # I don't really care about particular errors, just if the image can go through the whole process or not.
-        raise ValueError(
-            'Unable to process image for file {0:s}'.format(filename))
-    return (keypoints, descriptions)
+    pose = numpy.eye(4)
+    with open(filename) as file:
+        line = file.readline()
+    values = line.split(',')
+    x = float(values[0])
+    y = float(values[1])
+    z = float(values[2])
+    r = float(values[3])
+    p = float(values[4])
+    t = float(values[5])
+    # Convert into a homogenous transform
+    pose[0, 3] = x
+    pose[1, 3] = y
+    pose[2, 3] = z
+    rotation = Rotation.from_euler(
+        'XYZ', numpy.array([r, p, t]), degrees=False)
+    pose[0:3, 0:3] = rotation.as_matrix()
+    return pose
 
 
 if __name__ == '__main__':
     # Use command line arguments to specify which images to read.
     parser = argparse.ArgumentParser(
         description='Determine the 2D transformation that likely occurred between two images')
-    parser.add_argument('first_image', metavar='1', type=str,
-                        help='The first image in the sequence')
-    parser.add_argument('second_image', metavar='2', type=str,
+    parser.add_argument('first_image', metavar='first_image', type=str,
+                        help='The first image to use')
+    parser.add_argument('first_pose', metavar='first_pose',
+                        type=str, help='The first pose file to use')
+    parser.add_argument('second_image', metavar='second_image', type=str,
                         help='The second image in the sequence')
+    parser.add_argument('second_pose', metavar='second_pose',
+                        type=str, help='The second pose file to use')
     parser.add_argument('calibration_file', metavar='calibration_file',
                         type=str, help='The file containing camera parameters')
-    parser.add_argument('expected_result_file', metavar='expected_result_file', type=str,
-                        help='The file containing the ground truth 2D transformation between images.')
     args = parser.parse_args()
-    # Create the selected detector and describer
+    # Load the data from file.
+    first_image = loadImage(args.first_image)
+    first_pose = loadPose(args.first_pose)
+    second_image = loadImage(args.second_image)
+    second_pose = loadPose(args.second_pose)
+    intrinsic = loadParameters(args.calibration_file)
+    # Create the evaluator with the data.
+    evaluator = Evaluator(first_image, first_pose,
+                          second_image, second_pose, intrinsic)
+    # Create the selected detector and descriptor.
     detector = cv2.SIFT_create()
-    # Get the keypoints and descriptions from each specified image file.
-    (first_keypoints, first_descriptions) = processImage(
-        args.first_image, detector, detector)
-    (second_keypoints, second_descriptions) = processImage(
-        args.second_image, detector, detector)
-
-    (first_points, second_points) = findCorrespondence(
-        first_keypoints, first_descriptions, second_keypoints, second_descriptions)
-    camera_parameters = loadParameters(args.calibration_file)
-    transformation = computeTransform(
-        first_points, second_points, camera_parameters)
-    expected_transformation = loadExpectedResult(args.expected_result_file)
-    (translation_error, rotation_error) = calculateError(
-        transformation, expected_transformation)
+    # Evaluate the provided detector and descriptor.
+    (translation_error, rotation_error) = evaluator.evaluate(detector, detector)
     print('Translational error:')
     print(translation_error)
     print('Rotational error:')
