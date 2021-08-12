@@ -13,7 +13,25 @@ class Evaluator:
     the testing of a variety of different detectors and descriptors to see works the best.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, first_image: numpy.ndarray, first_pose: numpy.ndarray, second_image: numpy.ndarray, second_pose: numpy.ndarray, intrinsic: numpy.ndarray) -> None:
+        """!
+        @brief Construct the object with the given settings.
+
+        @param first_image The first image to use in comparision.
+        @param first_pose A 4x4 homogenous transform representing the ground truth of the camera when the first image
+        is captured.
+        @param second_image The second image to use in comparision.
+        @param second_pose A 4x4 homogenous transform representing the ground truth of the camera when the second image
+        is captured.
+        @param intrinsic A 3x3 matrix representing the camera's intrinsic parameters.
+        """
+        # Store all the values.
+        self.first_image = first_image
+        self.second_image = second_image
+        self.intrinsic = intrinsic
+        # The two poses can be used to calculate what the final transformation between the images should be.
+        self._expectedTransform = numpy.matmul(
+            first_pose.transpose(), second_pose)
         # Used to find correspondences between two sets of keypoints by checking if one candidate is lower than this
         # percentage of the next closest candadate. i.e. match if distance between A and X is less than
         # descriptor_match_threshold * distance between A and Y.
@@ -28,12 +46,28 @@ class Evaluator:
         Helper functions will then estimated the transformation likely to occur between the two images. This is compared
         to the provided ground truth to determine the error values.
 
-        @param detector A detector to use evaluate. It should provide a method called 'detect' that will return a list
-        of cv2.Keypoints from an image.
-        @param descriptor A descriptor to evaluate. It should provide a method called 'compute' that will return a list
-        of numpy.ndarray for each keypoint.
+        @param detector A detector to use evaluate. It should provide a method called 'detect' that receives an image,
+        stored as a numpy.ndarray, and should return a list of cv2.Keypoints.
+        @param descriptor A descriptor to evaluate. It should provide a method called 'compute' that has arguments of:
+        1) A numpy.ndarray representing an image, and 2) a list of cv2.Keypoints for that image. It should return a NxM
+        numpy array, where N is the number of keypoints and M is the size of the descriptor.
         """
-        return (0.0, 0.0)
+        # First, generate keypoints and descriptors for each image
+        first_keypoints = detector.detect(self.first_image)
+        (_, first_descriptors) = descriptor.compute(
+            self.first_image, first_keypoints)
+        second_keypoints = detector.detect(self.second_image)
+        (_, second_descriptors) = descriptor.compute(
+            self.second_image, second_keypoints)
+        # Then, match the best fitting keypoints in each image
+        (first_points, second_points) = self._findCorrespondence(
+            first_keypoints, first_descriptors, second_keypoints, second_descriptors)
+        # Use these to compute the transformation
+        transform = self._calculateTransform(
+            first_points, second_points, self.intrinsic)
+        # Compare against the ground truth.
+        results = self._calculateDifference(transform, self._expectedTransform)
+        return results
 
     def _calculateDifference(self, first: numpy.ndarray, second: numpy.ndarray) -> tuple[float, float]:
         """!
@@ -118,7 +152,7 @@ class Evaluator:
             cv2.DescriptorMatcher_FLANNBASED)
         # Find the candidate matches
         knn_matches = matcher.knnMatch(
-            queryDescriptors=first_descriptors, trainDescriptors=second_descriptors, k=2)
+            first_descriptors, second_descriptors, 2)
         # Find which are confirmed matches
         good_matches = []
         for match_set in knn_matches:
