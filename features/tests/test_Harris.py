@@ -1,4 +1,4 @@
-from Harris import Harris
+from features import Harris
 import numpy
 import unittest
 

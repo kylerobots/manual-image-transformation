@@ -1,6 +1,5 @@
-from numpy import ndarray
+from features import PointDetector
 import numpy
-from PointDetector import PointDetector
 import unittest
 
 
