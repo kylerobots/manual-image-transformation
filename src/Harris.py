@@ -59,24 +59,12 @@ class Harris(object):
                 candidate_score = scores[i, j]
                 max_score = numpy.max(local_region)
                 if candidate_score >= self._threshold and candidate_score == max_score:
-                    keypoints.append([i, j])
+                    keypoint = cv2.KeyPoint()
+                    keypoint.angle = -1
+                    keypoint.octave = 0
+                    keypoint.pt = [int(i), int(j)]
+                    keypoint.response = candidate_score
+                    keypoint.size = 3
+                    keypoints.append(keypoint)
         # Convert these keypoints into the cv type
-        return self._createCVKeypoints(numpy.array(keypoints))
-
-    def _createCVKeypoints(self, keypoint_array: numpy.ndarray) -> list:
-        """!
-        @brief Convert the numpy arrays of keypoint locations into a list of OpenCV keypoints.
-
-        This is for convenience when performing the transformation calculation.
-
-        @param keypoint_array A numpy array of keypoints, Nx2 in size, where the elements are the pixel coordinates of the
-        keypoints.
-        @return list Returns a list of cv2.Keypoints.
-        """
-        keypoints = []
-        for i in range(keypoint_array.shape[0]):
-            x = keypoint_array[i, 0]
-            y = keypoint_array[i, 1]
-            keypoint = cv2.KeyPoint(float(x), float(y), size=1.0)
-            keypoints.append(keypoint)
         return keypoints
