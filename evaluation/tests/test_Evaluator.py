@@ -1,5 +1,5 @@
 import cv2
-from Evaluator import Evaluator
+from evaluation import Evaluator
 import numpy
 import unittest
 

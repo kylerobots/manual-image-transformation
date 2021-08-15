@@ -1,9 +1,9 @@
 import argparse
-import cv2
-import numpy
+from evaluation import Evaluator
 from scipy.spatial.transform import Rotation
-
-from Evaluator import Evaluator
+import cv2
+import features
+import numpy
 
 
 def loadImage(filename: str) -> numpy.ndarray:
@@ -98,12 +98,13 @@ if __name__ == '__main__':
     second_pose = loadPose(args.second_pose)
     intrinsic = loadParameters(args.calibration_file)
     # Create the evaluator with the data.
-    evaluator = Evaluator(first_image, first_pose,
-                          second_image, second_pose, intrinsic)
+    evaluator_helper = Evaluator(first_image, first_pose,
+                                 second_image, second_pose, intrinsic)
     # Create the selected detector and descriptor.
     detector = cv2.SIFT_create()
+    dummy_detector = features.PointDetector(threshold=0.25)
     # Evaluate the provided detector and descriptor.
-    (translation_error, rotation_error) = evaluator.evaluate(detector, detector)
+    (translation_error, rotation_error) = evaluator_helper.evaluate(detector, detector)
     print('Translational error:')
     print(translation_error)
     print('Rotational error:')
