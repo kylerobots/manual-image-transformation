@@ -123,6 +123,15 @@ class Evaluator:
         # Determine candidate transformations
         num_solutions, rotations, translations, normals = cv2.decomposeHomographyMat(
             H, intrinsic)
+        for i in range(num_solutions):
+            print('Solution #{0:d}'.format(i))
+            print('Rotation:')
+            print(rotations[i])
+            print('Translation:')
+            print(translations[i])
+            print('Normal:')
+            print(normals[i])
+            print('\n############################\n')
         # Find the correct one by knowledge of the data collection
         transformation = numpy.eye(4)
         transformation[0:3, 0:3] = rotations[0]
