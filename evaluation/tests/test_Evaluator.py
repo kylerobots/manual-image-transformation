@@ -63,11 +63,11 @@ class TestEvaluator(unittest.TestCase):
         first_points = numpy.array(
             [[0, 0, z], [2, 0, z], [2, 5, z], [0, 5, z]], dtype=numpy.float32)
         # Create a transformation that will move the camera
-        R = numpy.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
-        t = numpy.array([[3.0], [0.0], [0.0]])
+        R = numpy.array([[0.0, -1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+        t = numpy.array([[3.0], [-5.0], [0.0]])
         expected_result = numpy.eye(4)
-        expected_result[0:3, 0:3] = R.transpose()
-        expected_result[0:3, 3:] = numpy.matmul(R.transpose(), -t)
+        expected_result[0:3, 0:3] = R
+        expected_result[0:3, 3:] = t
         # Determine where the second points would be given that.
         second_points = (numpy.matmul(
             R, first_points.transpose()) + t).transpose()
@@ -94,7 +94,7 @@ class TestEvaluator(unittest.TestCase):
                 result_element = result[i, j]
                 expected_element = expected_result[i, j]
                 self.assertAlmostEqual(result_element, expected_element, 6,
-                                       'Matrix element ({0:d}, {1:d} is incorrect.'.format(i, j))
+                                       'Matrix element ({0:d}, {1:d}) is incorrect.'.format(i, j))
 
     def testCalculateTranslationDiff(self):
         """!

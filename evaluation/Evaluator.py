@@ -125,7 +125,7 @@ class Evaluator:
             H, intrinsic)
         # Find the correct one by comparision of the normals to identity
         normal_cos_angles = numpy.zeros((num_solutions, 1))
-        unit_vector = numpy.array([0.0, 0.0, -1.0])
+        unit_vector = numpy.array([0.0, 0.0, 1.0])
         for i in range(num_solutions):
             # The normal vector should already be normalized, so no need to normalize.
             normal_cos_angles[i] = numpy.dot(normals[i].squeeze(), unit_vector)
