@@ -59,14 +59,15 @@ class TestEvaluator(unittest.TestCase):
         @test Test that the class extracts the right transform from two adjacent sets of points.
         """
         # Create some points in the first frame.
+        z = 1.0
         first_points = numpy.array(
-            [[0, 0, 0], [2, 0, 0], [2, 5, 0], [0, 5, 0]], dtype=numpy.float32)
+            [[0, 0, z], [2, 0, z], [2, 5, z], [0, 5, z]], dtype=numpy.float32)
         # Create a transformation that will move the camera
-        R = numpy.array([[0.0, -1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
-        t = numpy.array([[2.0], [5.0], [0.0]])
+        R = numpy.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+        t = numpy.array([[3.0], [0.0], [0.0]])
         expected_result = numpy.eye(4)
-        expected_result[0:3, 0:3] = R
-        expected_result[0:3, 3:] = t
+        expected_result[0:3, 0:3] = R.transpose()
+        expected_result[0:3, 3:] = numpy.matmul(R.transpose(), -t)
         # Determine where the second points would be given that.
         second_points = (numpy.matmul(
             R, first_points.transpose()) + t).transpose()
@@ -87,8 +88,13 @@ class TestEvaluator(unittest.TestCase):
         # Using these projected points, can the object recover the correct initial transform
         result = self.evaluator._calculateTransform(
             camera_first_points, camera_second_points, intrinsic)
-        self.assertTrue(numpy.array_equal(result, expected_result),
-                        'Unable to calculate correct transform')
+        # The matrix comparisions aren't reliable near zero, so check elements manually.
+        for i in range(expected_result.shape[0]):
+            for j in range(expected_result.shape[1]):
+                result_element = result[i, j]
+                expected_element = expected_result[i, j]
+                self.assertAlmostEqual(result_element, expected_element, 6,
+                                       'Matrix element ({0:d}, {1:d} is incorrect.'.format(i, j))
 
     def testCalculateTranslationDiff(self):
         """!
