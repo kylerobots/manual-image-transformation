@@ -20,13 +20,6 @@ class TestEvaluator(unittest.TestCase):
             fake_image, fake_pose, fake_image, fake_pose, fake_intrinsic)
         return super().setUp()
 
-    @unittest.skip('Skip until addressed if there is time.')
-    def testCalculateHomography(self):
-        """!
-        @test Test that the homography is determined correctly
-        """
-        self.fail('Fix this')
-
     def testCalculateRotationDiff(self):
         """!
         @test Test that rotations between two transformations are calculated correctly.
@@ -61,6 +54,48 @@ class TestEvaluator(unittest.TestCase):
         (_, result) = self.evaluator._calculateDifference(transform2, transform1)
         self.assertAlmostEqual(abs(result), numpy.pi)
 
+    def testCalculateTransform(self):
+        """!
+        @test Test that the class extracts the right transform from two adjacent sets of points.
+        """
+        # Create some points in the first frame.
+        z = 1.0
+        first_points = numpy.array(
+            [[0, 0, z], [2, 0, z], [2, 5, z], [0, 5, z]], dtype=numpy.float32)
+        # Create a transformation that will move the camera
+        R = numpy.array([[0.0, -1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+        t = numpy.array([[3.0], [-5.0], [0.0]])
+        expected_result = numpy.eye(4)
+        expected_result[0:3, 0:3] = R
+        expected_result[0:3, 3:] = t
+        # Determine where the second points would be given that.
+        second_points = (numpy.matmul(
+            R, first_points.transpose()) + t).transpose()
+        # Create a simple intrinsic matrix to project onto a fictional camera
+        intrinsic = numpy.array(
+            [[1.0, 0.0, 20.0], [0.0, 1.0, 20.0], [0.0, 0.0, 1.0]])
+        # Use no distortion or transformations
+        rvec = numpy.zeros((3, 1))
+        tvec = rvec
+        distortion = numpy.zeros((5, 1))
+        # Project the points into the camera
+        (camera_first_points, _) = cv2.projectPoints(
+            first_points, rvec, tvec, intrinsic, distortion)
+        camera_first_points = camera_first_points.squeeze()
+        (camera_second_points, _) = cv2.projectPoints(
+            second_points, rvec, tvec, intrinsic, distortion)
+        camera_second_points = camera_second_points.squeeze()
+        # Using these projected points, can the object recover the correct initial transform
+        result = self.evaluator._calculateTransform(
+            camera_first_points, camera_second_points, intrinsic)
+        # The matrix comparisions aren't reliable near zero, so check elements manually.
+        for i in range(expected_result.shape[0]):
+            for j in range(expected_result.shape[1]):
+                result_element = result[i, j]
+                expected_element = expected_result[i, j]
+                self.assertAlmostEqual(result_element, expected_element, 6,
+                                       'Matrix element ({0:d}, {1:d}) is incorrect.'.format(i, j))
+
     def testCalculateTranslationDiff(self):
         """!
         @test Test that translations between two transformations are calculated correctly.
@@ -80,15 +115,6 @@ class TestEvaluator(unittest.TestCase):
         # Order shouldn't matter
         (result, _) = self.evaluator._calculateDifference(transform2, transform1)
         self.assertAlmostEqual(result, 26.9130545, 6)
-
-    @unittest.skip('Skip until addressed if there is time.')
-    def testDecomposeHomography(self):
-        """!
-        @test Test that the system picks the correct candidate transformation from a given homography.
-
-        @note This just randomly picks one now, so is definitely wrong.
-        """
-        self.fail('Fix this')
 
     @unittest.skip('Skip until more intense debugging can occur in an appropriate branch.')
     def testFindCorrespondence(self):

@@ -123,10 +123,17 @@ class Evaluator:
         # Determine candidate transformations
         num_solutions, rotations, translations, normals = cv2.decomposeHomographyMat(
             H, intrinsic)
-        # Find the correct one by knowledge of the data collection
+        # Find the correct one by comparision of the normals to identity
+        normal_cos_angles = numpy.zeros((num_solutions, 1))
+        unit_vector = numpy.array([0.0, 0.0, 1.0])
+        for i in range(num_solutions):
+            # The normal vector should already be normalized, so no need to normalize.
+            normal_cos_angles[i] = numpy.dot(normals[i].squeeze(), unit_vector)
+        # The right one to pick is whichever is the cos(angle) closest to 1 AKA most aligned.
+        selection = numpy.argmax(normal_cos_angles)
         transformation = numpy.eye(4)
-        transformation[0:3, 0:3] = rotations[0]
-        transformation[0:3, 3:] = translations[0]
+        transformation[0:3, 0:3] = rotations[selection]
+        transformation[0:3, 3:] = translations[selection]
         return transformation
 
     def _findCorrespondence(self, first_keypoints: List[cv2.KeyPoint], first_descriptors: numpy.ndarray, second_keypoints: List[cv2.KeyPoint], second_descriptors: numpy.ndarray) -> Tuple[numpy.ndarray, numpy.ndarray]:
