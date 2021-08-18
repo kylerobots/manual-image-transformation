@@ -15,29 +15,23 @@ class Evaluator:
     the testing of a variety of different detectors and descriptors to see works the best.
     """
 
-    def __init__(self, first_image: numpy.ndarray, first_pose: numpy.ndarray, second_image: numpy.ndarray, second_pose: numpy.ndarray, intrinsic: numpy.ndarray) -> None:
+    def __init__(self, reference_image: numpy.ndarray, reference_pose: numpy.ndarray, intrinsic: numpy.ndarray) -> None:
         """!
         @brief Construct the object with the given settings.
 
-        @param first_image The first image to use in comparision.
-        @param first_pose A 4x4 homogenous transform representing the ground truth of the camera when the first image
-        is captured.
-        @param second_image The second image to use in comparision.
-        @param second_pose A 4x4 homogenous transform representing the ground truth of the camera when the second image
+        @param reference_image The first image to use in comparision.
+        @param reference_pose A 4x4 homogenous transform representing the ground truth of the camera when the first image
         is captured.
         @param intrinsic A 3x3 matrix representing the camera's intrinsic parameters.
         """
         # Store all the values.
-        self.first_image = first_image
-        self.second_image = second_image
-        self.intrinsic = intrinsic
-        # The two poses can be used to calculate what the final transformation between the images should be.
-        self._expectedTransform = numpy.matmul(
-            first_pose.transpose(), second_pose)
+        self._first_image = reference_image
+        self._first_pose = reference_pose
+        self._intrinsic = intrinsic
         # Used to find correspondences between two sets of keypoints by checking if one candidate is lower than this
         # percentage of the next closest candadate. i.e. match if distance between A and X is less than
         # descriptor_match_threshold * distance between A and Y.
-        self.descriptor_match_threshold = 0.7
+        self._descriptor_match_threshold = 0.7
         pass
 
     def evaluate(self, detector: Any, descriptor: Any) -> Tuple[float, float]:
@@ -56,21 +50,35 @@ class Evaluator:
         M is the size of the descriptor. This is to maintain compatability with OpenCV's implementation.
         """
         # First, generate keypoints and descriptors for each image
-        first_keypoints = detector.detect(self.first_image)
+        first_keypoints = detector.detect(self._first_image)
         (_, first_descriptors) = descriptor.compute(
-            self.first_image, first_keypoints)
-        second_keypoints = detector.detect(self.second_image)
+            self._first_image, first_keypoints)
+        second_keypoints = detector.detect(self._second_image)
         (_, second_descriptors) = descriptor.compute(
-            self.second_image, second_keypoints)
+            self._second_image, second_keypoints)
         # Then, match the best fitting keypoints in each image
         (first_points, second_points) = self._findCorrespondence(
             first_keypoints, first_descriptors, second_keypoints, second_descriptors)
         # Use these to compute the transformation
         transform = self._calculateTransform(
-            first_points, second_points, self.intrinsic)
+            first_points, second_points, self._intrinsic)
         # Compare against the ground truth.
         results = self._calculateDifference(transform, self._expectedTransform)
         return results
+
+    def setComparisionImage(self, image: numpy.ndarray, pose: numpy.ndarray) -> None:
+        """!
+        @brief Set the second image and associated pose for error calculation.
+
+        This also determines the expected transformation that @ref evaluate should determine in an ideal case.
+        @param image The image to compare to the one set at construction.
+        @param pose The 4x4 homogenous transform representing the pose associated with the image.
+        """
+        self._second_image = image
+        self._second_pose = pose
+        # The two poses can be used to calculate what the final transformation between the images should be.
+        self._expectedTransform = numpy.matmul(
+            self._first_pose.transpose(), pose)
 
     def _calculateDifference(self, first: numpy.ndarray, second: numpy.ndarray) -> Tuple[float, float]:
         """!
@@ -167,7 +175,7 @@ class Evaluator:
         good_matches = []
         for match_set in knn_matches:
             # Compare the first match to the second match to see if it meets the criteria.
-            if match_set[0].distance < self.descriptor_match_threshold * match_set[1].distance:
+            if match_set[0].distance < self._descriptor_match_threshold * match_set[1].distance:
                 # Mark this off as a correct match if so
                 good_matches.append(match_set[0])
         # Now that all matches are found, create the arrays of keypoint locations

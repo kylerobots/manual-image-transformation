@@ -16,8 +16,8 @@ class TestEvaluator(unittest.TestCase):
         fake_image = numpy.zeros(100)
         fake_pose = numpy.eye(4)
         fake_intrinsic = numpy.eye(3)
-        self.evaluator = Evaluator(
-            fake_image, fake_pose, fake_image, fake_pose, fake_intrinsic)
+        self.evaluator = Evaluator(fake_image, fake_pose, fake_intrinsic)
+        self.evaluator.setComparisionImage(fake_image, fake_pose)
         return super().setUp()
 
     def testCalculateRotationDiff(self):

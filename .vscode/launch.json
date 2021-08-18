@@ -11,10 +11,8 @@
 			"program": "${file}",
 			"console": "integratedTerminal",
 			"args": [
-				"data/000000.png",
-				"data/000000.txt",
-				"data/000001.png",
-				"data/000001.txt",
+				"images.txt",
+				"poses.txt",
 				"data/calibration.txt"
 			]
 		}
