@@ -116,15 +116,22 @@ if __name__ == '__main__':
     intrinsic = loadParameters(args.calibration_file)
     if len(images) != len(poses):
         raise ValueError('Image list and pose list are not the same size!')
-    # Create the evaluator with the data.
     evaluator = Evaluator(images[0], poses[0], intrinsic)
-    # Create the selected detector and descriptor.
-    detector = cv2.SIFT_create()
-    # dummy_detector = features.PointDetector(threshold=0.25)
-    # Evaluate the provided detector and descriptor.
-    evaluator.setComparisionImage(images[1], poses[1])
-    (translation_error, rotation_error) = evaluator.evaluate(detector, detector)
-    print('Translational error:')
-    print(translation_error)
-    print('Rotational error:')
-    print(rotation_error)
+    # Create evaluators to test
+    detectors = {}
+    detectors['OpenCV SIFT'] = cv2.SIFT_create()
+    # Iterate through each and calculate average error across all images.
+    for detector_name in detectors.keys():
+        detector = detectors[detector_name]
+        total_translation_error = 0.0
+        total_rotation_error = 0.0
+        for i in range(1, len(images)):
+            evaluator.setComparisionImage(images[i], poses[i])
+            (translation_error, rotation_error) = evaluator.evaluate(
+                detector, detector)
+            total_translation_error += abs(translation_error)
+            total_rotation_error += abs(rotation_error)
+        total_translation_error /= (len(images) - 1.0)
+        total_rotation_error /= (len(images) - 1.0)
+        print('{0:s}: {1:0.3f}  --  {2:0.3f}'.format(detector_name,
+              total_translation_error, total_rotation_error))

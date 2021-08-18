@@ -48,6 +48,7 @@ class Evaluator:
         1) A numpy.ndarray representing an image, and 2) a list of cv2.Keypoints for that image. It should return a
         tuple consisting of the keypoints provided to it and an NxM numpy array, where N is the number of keypoints and
         M is the size of the descriptor. This is to maintain compatability with OpenCV's implementation.
+        @return Tuple[float, float] returns the translational and rotational errors
         """
         # First, generate keypoints and descriptors for each image
         first_keypoints = detector.detect(self._first_image)
