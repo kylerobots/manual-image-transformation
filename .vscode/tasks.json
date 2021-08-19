@@ -6,7 +6,7 @@
 		{
 			"label": "Run Example",
 			"type": "shell",
-			"command": "py -m pipenv run python determine_transformation.py images.txt poses.txt data/calibration.txt",
+			"command": "py -m pipenv run python determine_transformation.py images.txt poses.txt data/calibration.txt 0.25",
 			"problemMatcher": []
 		}
 	]

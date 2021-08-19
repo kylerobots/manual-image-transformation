@@ -15,7 +15,7 @@ class Evaluator:
     the testing of a variety of different detectors and descriptors to see works the best.
     """
 
-    def __init__(self, reference_image: numpy.ndarray, reference_pose: numpy.ndarray, intrinsic: numpy.ndarray) -> None:
+    def __init__(self, reference_image: numpy.ndarray, reference_pose: numpy.ndarray, intrinsic: numpy.ndarray, camera_height: float) -> None:
         """!
         @brief Construct the object with the given settings.
 
@@ -23,11 +23,13 @@ class Evaluator:
         @param reference_pose A 4x4 homogenous transform representing the ground truth of the camera when the first image
         is captured.
         @param intrinsic A 3x3 matrix representing the camera's intrinsic parameters.
+        @param camera_height The height of the camera above the ground plane.
         """
         # Store all the values.
         self._first_image = reference_image
         self._first_pose = reference_pose
         self._intrinsic = intrinsic
+        self.camera_height = camera_height
         # Used to find correspondences between two sets of keypoints by checking if one candidate is lower than this
         # percentage of the next closest candadate. i.e. match if distance between A and X is less than
         # descriptor_match_threshold * distance between A and Y.
@@ -142,7 +144,9 @@ class Evaluator:
         selection = numpy.argmax(normal_cos_angles)
         transformation = numpy.eye(4)
         transformation[0:3, 0:3] = rotations[selection]
-        transformation[0:3, 3:] = translations[selection]
+        # The homography decomposes to a scale factor based on distance from the camera. But since we know the camera
+        # height, this can be corrected for.
+        transformation[0:3, 3:] = translations[selection] * self.camera_height
         return transformation
 
     def _findCorrespondence(self, first_keypoints: List[cv2.KeyPoint], first_descriptors: numpy.ndarray, second_keypoints: List[cv2.KeyPoint], second_descriptors: numpy.ndarray) -> Tuple[numpy.ndarray, numpy.ndarray]:

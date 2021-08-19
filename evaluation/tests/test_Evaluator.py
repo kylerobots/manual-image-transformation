@@ -16,7 +16,7 @@ class TestEvaluator(unittest.TestCase):
         fake_image = numpy.zeros(100)
         fake_pose = numpy.eye(4)
         fake_intrinsic = numpy.eye(3)
-        self.evaluator = Evaluator(fake_image, fake_pose, fake_intrinsic)
+        self.evaluator = Evaluator(fake_image, fake_pose, fake_intrinsic, 1.0)
         self.evaluator.setComparisionImage(fake_image, fake_pose)
         return super().setUp()
 
@@ -59,7 +59,8 @@ class TestEvaluator(unittest.TestCase):
         @test Test that the class extracts the right transform from two adjacent sets of points.
         """
         # Create some points in the first frame.
-        z = 1.0
+        z = 4.0
+        self.evaluator.camera_height = z
         first_points = numpy.array(
             [[0, 0, z], [2, 0, z], [2, 5, z], [0, 5, z]], dtype=numpy.float32)
         # Create a transformation that will move the camera
