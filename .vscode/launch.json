@@ -13,7 +13,8 @@
 			"args": [
 				"images.txt",
 				"poses.txt",
-				"data/calibration.txt"
+				"data/calibration.txt",
+				"0.25"
 			]
 		}
 	]

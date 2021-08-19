@@ -109,6 +109,8 @@ if __name__ == '__main__':
                         help='A file containing the list of poses to match the images, one per line.')
     parser.add_argument('calibration_file', metavar='calibration_file',
                         type=str, help='The file containing camera parameters')
+    parser.add_argument('camera_height', metavar='camera_height',
+                        type=float, help='The height of the camera above the ground plane')
     args = parser.parse_args()
     # Load the data from file.
     images = loadImages(args.image_list)
@@ -116,7 +118,7 @@ if __name__ == '__main__':
     intrinsic = loadParameters(args.calibration_file)
     if len(images) != len(poses):
         raise ValueError('Image list and pose list are not the same size!')
-    evaluator = Evaluator(images[0], poses[0], intrinsic)
+    evaluator = Evaluator(images[0], poses[0], intrinsic, args.camera_height)
     # Create evaluators to test
     detectors = {}
     detectors['OpenCV SIFT'] = cv2.SIFT_create()

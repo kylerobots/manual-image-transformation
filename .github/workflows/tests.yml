@@ -49,4 +49,4 @@ jobs:
           pip install pipenv
           pipenv install --python ${{ matrix.python-version }}
       - name: Run Code
-        run: pipenv run python determine_transformation.py images.txt poses.txt data/calibration.txt
+        run: pipenv run python determine_transformation.py images.txt poses.txt data/calibration.txt 0.25
