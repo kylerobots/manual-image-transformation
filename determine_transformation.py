@@ -121,19 +121,31 @@ if __name__ == '__main__':
     evaluator = Evaluator(images[0], poses[0], intrinsic, args.camera_height)
     # Create evaluators to test
     detectors = {}
+    detectors['Point Detector'] = features.PointDetector(threshold=95)
+    detectors['Harris'] = features.Harris(threshold=7.5e6)
+    detectors['FAST'] = features.FAST(threshold=128)
     detectors['OpenCV SIFT'] = cv2.SIFT_create()
+    descriptor = cv2.SIFT_create()
     # Iterate through each and calculate average error across all images.
     for detector_name in detectors.keys():
         detector = detectors[detector_name]
         total_translation_error = 0.0
         total_rotation_error = 0.0
+        good = True
         for i in range(1, len(images)):
             evaluator.setComparisionImage(images[i], poses[i])
-            (translation_error, rotation_error) = evaluator.evaluate(
-                detector, detector)
+            try:
+                (translation_error, rotation_error) = evaluator.evaluate(
+                    detector, descriptor)
+            except Exception as e:
+                good = False
+                break
             total_translation_error += abs(translation_error)
             total_rotation_error += abs(rotation_error)
         total_translation_error /= (len(images) - 1.0)
         total_rotation_error /= (len(images) - 1.0)
-        print('{0:s}: {1:0.3f}  --  {2:0.3f}'.format(detector_name,
-              total_translation_error, total_rotation_error))
+        if good:
+            print('{0:s}: {1:0.3f}  --  {2:0.3f}'.format(detector_name,
+                  total_translation_error, total_rotation_error))
+        else:
+            print('{0:s}: N/A'.format(detector_name))
