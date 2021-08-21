@@ -52,7 +52,7 @@ class FAST(object):
         @return true if the pixel meets the criteria, false otherwise.
         @throw ValueError Thrown if the x or y values prevent evaluation of a full circle.
         """
-        target_value = image[x, y]
+        target_value = numpy.int64(image[x, y])
         # Verify that the full circle can be checked.
         if x < 3 or x > image.shape[0] - 4 or y < 3 or y > image.shape[1] - 4:
             raise ValueError(
